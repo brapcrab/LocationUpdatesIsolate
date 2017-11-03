@@ -1,12 +1,14 @@
 package com.android.locationupdatesisolate;
 
 import android.app.Activity;
+import android.app.AppOpsManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -19,6 +21,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.firebase.geofire.GeoFire;
+import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -28,11 +32,12 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.SettingsClient;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class MyLocationService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     private Looper mLooper;
     private Boolean isRunning = false;
-    private FusedLocation mLocProvider;
     private FusedLocationProviderClient mLocationProviderClient;
     private Boolean requestingLocation;
     private SettingsClient mSettingsClient;
@@ -43,7 +48,9 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
     private LocationRequest mLocationRequest;
     private LocationSettingsRequest mLocationSettingsRequest;
     private String userID;
-    private Activity activity;
+    private FirebaseDatabase mFirebaseDatabase;
+    private DatabaseReference mDatabaseReference;
+    private GeoFire geoFire;
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
     private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
             UPDATE_INTERVAL_IN_MILLISECONDS / 2;
@@ -56,8 +63,10 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
     @SuppressWarnings({"MissingPermission"})
     public void onCreate() {
         super.onCreate();
+        //AppOpsManager.checkOp("android:mock_location", "yourUID", "com.android.locationupdatesisolate");
         createLocationCallback();
         createLocationRequest();
+        createGeoFire();
     }
 
     @Override
@@ -70,18 +79,15 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
             @SuppressWarnings({"MissingPermission"})
             public void run() {
                 Looper.prepare();
-                if (!permissionEnabled) {
-
-                }
                 if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     Log.i("runnable permission", "permission check failed");
                     permissionEnabled = false;
                     sendLocalBroadcast();
-                    Thread.currentThread().interrupt();
+                    //Thread.currentThread().interrupt();
                     return;
                 }
-                mLocationProviderClient = LocationServices.getFusedLocationProviderClient(getApplicationContext());
-                mLocationProviderClient.setMockMode(true);
+                mLocationProviderClient = LocationServices.getFusedLocationProviderClient(MyLocationService.this);
+                //mLocationProviderClient.setMockMode(true);
                 mLocationProviderClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
                 if (isRunning) {
                     Log.i("runnable", "is running");
@@ -94,10 +100,6 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
         return super.onStartCommand(intent, flags, startId);
     }
 
-    public void killService() {
-        Log.i("kill", "service killed");
-        isRunning = false;
-    }
 
     @Override
     public void onDestroy() {
@@ -127,6 +129,12 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
+    private void createGeoFire() {
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+        mDatabaseReference = mFirebaseDatabase.getReference("Locations");
+        geoFire = new GeoFire(mDatabaseReference);
+    }
+
     private void createLocationCallback() {
         mLocationCallback = new LocationCallback() {
             @Override
@@ -135,6 +143,7 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
                 super.onLocationResult(locationResult);
                 mCurrentLocation = locationResult.getLastLocation();
                 if (mCurrentLocation != null) {
+                    geoFire.setLocation("PutUidHere",new GeoLocation(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude()));
                     Log.i("location result", "location received");
                 }
             }
@@ -142,9 +151,9 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
     }
 
     public void sendLocalBroadcast() {
-        Intent intent = new Intent();
-        intent.putExtra("location_enabled", false);
-        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+        Intent intent = new Intent("location_enabled");
+        intent.putExtra("location_services", false);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         Log.i("broadcastsender", "broadcast sent");
     }
 

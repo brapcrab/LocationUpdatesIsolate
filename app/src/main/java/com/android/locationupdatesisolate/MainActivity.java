@@ -24,13 +24,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //Intent intent = new Intent(this, LocationService.class);
-        //intent.setAction("com.android.locationupdatesisolate.action.START_UPDATES");
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
+        LocalBroadcastManager.getInstance(this).registerReceiver(
                 mMessageReceiver, new IntentFilter("location_enabled"));
         Intent intent = new Intent(this, MyLocationService.class);
         startService(intent);
-        //LocationService.startUpdates(this, "test", "best");
         if (isMyServiceRunning(MyLocationService.class)){
             Log.i("startService", "Service has started");
         }
@@ -38,13 +35,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
-        unregisterReceiver(mMessageReceiver);
         super.onStop();
     }
 
     @Override
     protected void onDestroy() {
-        unregisterReceiver(mMessageReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
         super.onDestroy();
     }
 
