@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "833323794835",
+    "firebase_url": "https://locationservice-5e6cf.firebaseio.com",
+    "project_id": "locationservice-5e6cf",
+    "storage_bucket": "locationservice-5e6cf.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:833323794835:android:612bb2ddadcbdd8e",
+        "android_client_info": {
+          "package_name": "com.android.locationupdatesisolate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "833323794835-kcf6c3tfdlrtie475rlrheqem75jbk6p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAfVdzszhHFiPfH2QxhIXm3ZTRSAT7rOkw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

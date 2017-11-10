@@ -8,30 +8,44 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 
+import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.auth.ErrorCodes;
+import com.firebase.ui.auth.IdpResponse;
 import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_LOCATION_REQUEST_CODE = 1;
     private boolean permissionEnabled;
+    private static int signInRequestCode = 666;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        //setContentView(R.layout.activity_main);
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mMessageReceiver, new IntentFilter("location_enabled"));
-        Intent intent = new Intent(this, MyLocationService.class);
-        startService(intent);
+        Intent locationIntent = new Intent(this, MyLocationService.class);
+        startService(locationIntent);
+        Intent loginUI = new Intent(this, LoginActivity.class);
+        startActivity(loginUI);
         if (isMyServiceRunning(MyLocationService.class)){
             Log.i("startService", "Service has started");
         }
     }
+
 
     @Override
     protected void onStop() {
@@ -40,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        signOut(getCurrentFocus());
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
         super.onDestroy();
     }
@@ -47,6 +62,18 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+    }
+
+    public void signOut(View view) {
+        AuthUI.getInstance()
+                .signOut(this)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    public void onComplete(@NonNull Task<Void> task) {
+                        // user is now signed out
+                        startActivity(new Intent(getApplicationContext(), LoginActivity.class));
+                        finish();
+                    }
+                });
     }
 
     public void requestPermission() {

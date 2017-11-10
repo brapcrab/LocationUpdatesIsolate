@@ -42,6 +42,7 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
     private Boolean requestingLocation;
     private SettingsClient mSettingsClient;
     private Location mCurrentLocation;
+    private static Location currentLocation;
     private boolean permissionEnabled;
     private PendingIntent mPendingIntent;
     private LocationCallback mLocationCallback;
@@ -156,7 +157,6 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         Log.i("broadcastsender", "broadcast sent");
     }
-
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
