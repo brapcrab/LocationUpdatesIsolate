@@ -23,7 +23,7 @@
         </activity>
 
         <service
-            android:name=".MyLocationService"
+            android:name=".LocationProviderService"
             android:enabled="true"
             android:exported="false">
         </service>

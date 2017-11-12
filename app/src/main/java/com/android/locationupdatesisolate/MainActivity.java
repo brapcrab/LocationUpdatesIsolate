@@ -37,11 +37,11 @@ public class MainActivity extends AppCompatActivity {
         //setContentView(R.layout.activity_main);
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mMessageReceiver, new IntentFilter("location_enabled"));
-        Intent locationIntent = new Intent(this, MyLocationService.class);
+        Intent locationIntent = new Intent(this, LocationProviderService.class);
         startService(locationIntent);
         Intent loginUI = new Intent(this, LoginActivity.class);
         startActivity(loginUI);
-        if (isMyServiceRunning(MyLocationService.class)){
+        if (isMyServiceRunning(LocationProviderService.class)){
             Log.i("startService", "Service has started");
         }
     }
@@ -100,8 +100,8 @@ public class MainActivity extends AppCompatActivity {
             case PERMISSION_LOCATION_REQUEST_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i("permission result", "permission granted");
-                    if (!isMyServiceRunning(MyLocationService.class)) {
-                        startService(new Intent().setAction("com.android.locationupdatesisolate.MyLocationService"));
+                    if (!isMyServiceRunning(LocationProviderService.class)) {
+                        startService(new Intent().setAction("com.android.locationupdatesisolate.LocationProviderService"));
                     }
                 }
                 break;

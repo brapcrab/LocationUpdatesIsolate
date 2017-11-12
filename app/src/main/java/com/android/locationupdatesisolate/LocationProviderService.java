@@ -32,17 +32,22 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.SettingsClient;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-public class MyLocationService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+import java.sql.Date;
+import java.sql.Time;
+
+public class LocationProviderService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     private Looper mLooper;
     private Boolean isRunning = false;
     private FusedLocationProviderClient mLocationProviderClient;
     private Boolean requestingLocation;
     private SettingsClient mSettingsClient;
-    private Location mCurrentLocation;
-    private static Location currentLocation;
+    private static Location mCurrentLocation;
+    private FirebaseUser mCurrentUser;
     private boolean permissionEnabled;
     private PendingIntent mPendingIntent;
     private LocationCallback mLocationCallback;
@@ -52,12 +57,17 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDatabaseReference;
     private GeoFire geoFire;
+    private Long requestTime;
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
     private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
             UPDATE_INTERVAL_IN_MILLISECONDS / 2;
 
 
-    public MyLocationService() {
+    public LocationProviderService() {
+    }
+
+    public static Location getCurrentLocation() {
+        return mCurrentLocation;
     }
 
     @Override
@@ -87,7 +97,7 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
                     //Thread.currentThread().interrupt();
                     return;
                 }
-                mLocationProviderClient = LocationServices.getFusedLocationProviderClient(MyLocationService.this);
+                mLocationProviderClient = LocationServices.getFusedLocationProviderClient(LocationProviderService.this);
                 //mLocationProviderClient.setMockMode(true);
                 mLocationProviderClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
                 if (isRunning) {
@@ -143,15 +153,21 @@ public class MyLocationService extends Service implements GoogleApiClient.Connec
                 Log.i("loc result", "called");
                 super.onLocationResult(locationResult);
                 mCurrentLocation = locationResult.getLastLocation();
+                requestTime = mCurrentLocation.getTime();
+                mCurrentUser = FirebaseAuth.getInstance().getCurrentUser();
+                if (mCurrentUser != null) {
+                    userID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                    Log.i("firebase user", "UID not null");
+                }
                 if (mCurrentLocation != null) {
-                    geoFire.setLocation("PutUidHere",new GeoLocation(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude()));
                     Log.i("location result", "location received");
+                    geoFire.setLocation(userID, new GeoLocation(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude()));
                 }
             }
         };
     }
 
-    public void sendLocalBroadcast() {
+    private void sendLocalBroadcast() {
         Intent intent = new Intent("location_enabled");
         intent.putExtra("location_services", false);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
